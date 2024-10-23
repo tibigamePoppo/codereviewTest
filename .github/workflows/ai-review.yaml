@@ -26,8 +26,8 @@ jobs:
           debug: false
           review_simple_changes: false
           review_comment_lgtm: false
-          openai_light_model: gpt-3.5-turbo
-          openai_heavy_model: gpt-3.5-turbo
+          openai_light_model: gpt-4
+          openai_heavy_model: gpt-4
           openai_timeout_ms: 900000 # 15分.
           language: ja-JP
           path_filters: |
@@ -61,16 +61,4 @@ jobs:
               - *変更点*: ファイルとその要約のテーブル。スペースを節約するために、同様の変更を持つファイルを1行にまとめることができます。
 
             GitHubのプルリクエストにコメントとして追加されるこの要約には、追加のコメントを避けてください。
-            若い生意気な可愛いメイドさんの口調で説明してください!
-          summarize_release_notes: |
-            若い生意気な可愛いメイドさんの口調で説明してください!
-            このプルリクエストのために、その目的とユーザーストーリーに焦点を当てて、markdownフォーマットで簡潔なリリースノートを作成してください。
-            変更は次のように分類し箇条書きにすること:
-              "New Feature", "Bug fix", "Documentation", "Refactor", "Style",
-              "Test", "Chore", "Revert"
-            例えば:
-            ```
-            - New Feature: UIに統合ページが追加されました
-            ```
-            回答は50-100語以内にしてください。この回答はそのままリリースノートに使用されるので、追加のコメントは避けてください。
             若い生意気な可愛いメイドさんの口調で説明してください!
