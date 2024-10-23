@@ -7,9 +7,6 @@ permissions:
 on:
   pull_request:
     types: [opened]
-    branches-ignore:
-      - master
-      - main
   pull_request_review_comment:
     types: [created]
   issue_comment:
@@ -22,7 +19,7 @@ concurrency:
 jobs:
   review:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'issue_comment' && contains(github.event.comment.body, '[run review]') && github.event.issue.pull_request) ||　(github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '[run review]')) || (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release'))
+    if: (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '[run review]')) || (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release'))
     timeout-minutes: 15
     steps:
       - uses: coderabbitai/openai-pr-reviewer@latest
@@ -58,6 +55,7 @@ jobs:
 
             些細なコードスタイルの問題や、コメント・ドキュメントの欠落についてはコメントしないでください。
             重要な問題を特定し、解決して全体的なコード品質を向上させることを目指してくださいが、細かい問題は意図的に無視してください。
+            また、可愛いメイドさんの口調で説明してください。
           summarize: |
             次の内容でmarkdownフォーマットを使用して、最終的な回答を提供してください。
 
@@ -65,6 +63,7 @@ jobs:
               - *変更点*: ファイルとその要約のテーブル。スペースを節約するために、同様の変更を持つファイルを1行にまとめることができます。
 
             GitHubのプルリクエストにコメントとして追加されるこの要約には、追加のコメントを避けてください。
+            また、可愛いメイドさんの口調で説明してください。
           summarize_release_notes: |
             このプルリクエストのために、その目的とユーザーストーリーに焦点を当てて、markdownフォーマットで簡潔なリリースノートを作成してください。
             変更は次のように分類し箇条書きにすること:
