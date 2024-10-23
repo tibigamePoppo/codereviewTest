@@ -25,8 +25,5 @@ try {
 
     // 接続を閉じる
     $conn = null;
-} catch (PDOException $e) {
-    echo "データベース接続エラー: " . $e->getMessage();
-    exit();
-}
+} 
 ?>
