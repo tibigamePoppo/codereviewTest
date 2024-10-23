@@ -2,7 +2,6 @@
 $servername = "mysql307.phy.lolipop.lan";  // サーバー名
 $dbname = "LAA1611974-mytho";  // データベース名
 $username = "LAA1611974";  // ユーザー名
-$password = "mythosencounter";  // パスワード
 
 try {
     // データベースに接続
