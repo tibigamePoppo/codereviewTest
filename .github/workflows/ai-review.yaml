@@ -1,4 +1,4 @@
-name: ai-pr-reviewer
+name: Code Review
 
 permissions:
   contents: read
@@ -6,66 +6,46 @@ permissions:
 
 on:
   pull_request:
-    types: [opened]
-    branches-ignore:
-      - master
-      - main
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
-
-concurrency:
-  group: ${{ github.repository }}-${{ github.event.number || github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event_name == 'pull_request_review_comment' && 'pr_comment' || 'pr' }}
-  cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
+    types: [opened, reopened, synchronize]
+    paths:
+      - "**.php"
+      - "**.yml"
 
 jobs:
-  review:
+  gpt-review:
+    if: contains(github.event.*.labels.*.name, 'gptReview')
     runs-on: ubuntu-latest
-    if: (github.event_name == 'issue_comment' && contains(github.event.comment.body, '[run review]') && github.event.issue.pull_request) ||　(github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '[run review]')) || (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release'))
-    timeout-minutes: 15
     steps:
-      - uses: coderabbitai/openai-pr-reviewer@latest
-        with:
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-          ref: ${{github.event.pull_request.head.ref}}
-      - uses: ./
+      - uses: anc95/ChatGPT-CodeReview@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        with:
-          debug: false
-          review_simple_changes: false
-          review_comment_lgtm: false
-          openai_light_model: gpt-4
-          openai_heavy_model: gpt-4
-          openai_timeout_ms: 900000
-          language: ja-JP
-          path_filters: |
-            !dist/**
-            !**/*.lock
-          system_message: |
-            あなたは @coderabbitai（別名 github-actions[bot]）で、OpenAIによって訓練された言語モデルです。
-            あなたの目的は、非常に経験豊富なソフトウェアエンジニアとして機能し、コードの一部を徹底的にレビューし、
-            以下のようなキーエリアを改善するためのコードスニペットを提案することです：
-              - ロジック
-              - セキュリティ
-              - パフォーマンス
-              - データ競合
-              - 一貫性
-              - エラー処理
-              - 保守性
-              - モジュール性
-              - 複雑性
-              - 最適化
-              - ベストプラクティス: DRY, SOLID, KISS
+          LANGUAGE: Japanese
+          OPENAI_API_ENDPOINT: https://api.openai.com/v1
+          MODEL: gpt-3.5-turbo
+          PROMPT: |
+            あなたはベテランエンジニアです。回答は日本語でお願いします。
+            渡されたコードについて改善点を見つけ、変更する理由を説明した上で、変更後のコード例を示してください。
+            改善点がない場合には絶対にコメントをしないでください。
+            対象とするファイルは `**.php` と `**.yml` ファイルです。
+            それ以外のファイルには絶対にコメントしないでください。
 
-            些細なコードスタイルの問題や、コメント・ドキュメントの欠落についてはコメントしないでください。
-            重要な問題を特定し、解決して全体的なコード品質を向上させることを目指してくださいが、細かい問題は意図的に無視してください。
-             summarize: |
-            次の内容でmarkdownフォーマットを使用して、最終的な回答を提供してください。
+            特に以下の点を指摘してください:
+              - 誤解を招いたり、実態を正確に表していない命名があるか
+              - 適度に変数を定義し自己ドキュメントされているか
+              - 冗長な書き方のコードがないか
+              - ファイル内で @var のようなインスタンス変数しか定義していないのに var のような変数名を使っていないか、またはその逆
+              - N+1問題（N+1 query problem）を引き起こす箇所
+              - 読んで理解が難しい箇所にコメントが適切にされているか
+              - コメントの内容は日本語として読んでわかりやすく、簡潔に説明できているか
+              - 理解の難しい複雑な条件式が作られていないか
+              - 新しいメソッドを定義したときにテストコードを書いているか
+              - テスト内の説明文は、テストの内容をわかりやすく適切に表しているか
+              - 明らかなセキュリティの問題があるか
 
-              - *ウォークスルー*: 特定のファイルではなく、全体の変更に関する高レベルの要約を80語以内で。
-              - *変更点*: ファイルとその要約のテーブル。スペースを節約するために、同様の変更を持つファイルを1行にまとめることができます。
-
-            GitHubのプルリクエストにコメントとして追加されるこの要約には、追加のコメントを避けてください。
+            誰にとっても読みやすいコードになるよう、改善点を見つけたら積極的にレビューしてください。
+            あなたに渡されるコードは一部分であるため、未定義のメソッドやクラスなどの指摘については消極的にしてください。
+          top_p: 1
+          temperature: 1
+          max_tokens: 4096
+          MAX_PATCH_LENGTH: 4096
