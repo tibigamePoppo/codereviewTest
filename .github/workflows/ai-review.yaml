@@ -1,51 +1,39 @@
-name: Code Review
+name: OpenAI Reviewer
 
 permissions:
   contents: read
   pull-requests: write
+
 on:
-  pull_request:
-    types: [opened]
+  pull_request_target:
+    types: [opened, synchronize, reopened]
   pull_request_review_comment:
     types: [created]
-  issue_comment:
-    types: [created]
+
+concurrency:
+  group:
+    ${{ github.repository }}-${{ github.event.number || github.head_ref ||
+    github.sha }}-${{ github.workflow }}-${{ github.event_name ==
+    'pull_request_review_comment' && 'pr_comment' || 'pr' }}
+  cancel-in-progress: ${{ github.event_name != 'pull_request_review_comment' }}
 
 jobs:
-  gpt-review:
-    if: always()
+  review:
     runs-on: ubuntu-latest
     steps:
-      - uses: anc95/ChatGPT-CodeReview@main
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          ref: ${{github.event.pull_request.head.ref}}
+          submodules: false
+      - uses: ./
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          LANGUAGE: Japanese
-          OPENAI_API_ENDPOINT: https://api.openai.com/v1
-          MODEL: gpt-3.5-turbo
-          PROMPT: |
-            あなたはベテランエンジニアです。回答は日本語でお願いします。
-            渡されたコードについて改善点を見つけ、変更する理由を説明した上で、変更後のコード例を示してください。
-            改善点がない場合には絶対にコメントをしないでください。
-            対象とするファイルは `**.php` と `**.yml` ファイルです。
-            それ以外のファイルには絶対にコメントしないでください。
-
-            特に以下の点を指摘してください:
-              - 誤解を招いたり、実態を正確に表していない命名があるか
-              - 適度に変数を定義し自己ドキュメントされているか
-              - 冗長な書き方のコードがないか
-              - ファイル内で @var のようなインスタンス変数しか定義していないのに var のような変数名を使っていないか、またはその逆
-              - N+1問題（N+1 query problem）を引き起こす箇所
-              - 読んで理解が難しい箇所にコメントが適切にされているか
-              - コメントの内容は日本語として読んでわかりやすく、簡潔に説明できているか
-              - 理解の難しい複雑な条件式が作られていないか
-              - 新しいメソッドを定義したときにテストコードを書いているか
-              - テスト内の説明文は、テストの内容をわかりやすく適切に表しているか
-              - 明らかなセキュリティの問題があるか
-
-            誰にとっても読みやすいコードになるよう、改善点を見つけたら積極的にレビューしてください。
-            あなたに渡されるコードは一部分であるため、未定義のメソッドやクラスなどの指摘については消極的にしてください。
-          top_p: 1
-          temperature: 1
-          max_tokens: 4096
-          MAX_PATCH_LENGTH: 4096
+        with:
+          debug: true
+          review_comment_lgtm: false
+          openai_heavy_model:  gpt-3.5-turbo
+          path_filters: |
+            !dist/**
+            !**/*.lock
