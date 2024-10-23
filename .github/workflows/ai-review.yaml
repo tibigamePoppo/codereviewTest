@@ -5,8 +5,11 @@ permissions:
   pull-requests: write
 
 on:
+  push:
   pull_request:
     types: [opened]
+
+    
 
 concurrency:
   group: ${{ github.repository }}-${{ github.event.number || github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event_name == 'pull_request_review_comment' && 'pr_comment' || 'pr' }}
